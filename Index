@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Le Labo · Argentique</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:      oklch(0.165 0.008 66);
+    --bg-2:    oklch(0.205 0.009 66);
+    --bg-3:    oklch(0.255 0.010 66);
+    --line:    oklch(0.315 0.010 66);
+    --line-2:  oklch(0.42 0.012 66);
+    --text:    oklch(0.95 0.006 78);
+    --muted:   oklch(0.70 0.008 78);
+    --faint:   oklch(0.55 0.008 78);
+    --amber:   oklch(0.805 0.145 71);
+    --amber-2: oklch(0.72 0.135 66);
+    --radius:  14px;
+    --ease:    cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:"Geist",system-ui,-apple-system,sans-serif;
+    font-size:15px;line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  .mono{font-family:"Geist Mono",ui-monospace,monospace}
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    padding:16px 22px;border-bottom:1px solid var(--line);
+    position:sticky;top:0;z-index:20;
+    background:color-mix(in oklch, var(--bg) 88%, transparent);
+    backdrop-filter:blur(8px);
+  }
+  .brand{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .wordmark{
+    font-family:"Geist Mono",monospace;font-weight:600;font-size:15px;
+    letter-spacing:0.42em;text-transform:uppercase;
+    display:flex;align-items:center;gap:10px;
+  }
+  .wordmark .dot{width:7px;height:7px;border-radius:50%;background:var(--amber);
+    box-shadow:0 0 10px 1px color-mix(in oklch, var(--amber) 70%, transparent);flex:none}
+  .tagline{color:var(--faint);font-size:12.5px;letter-spacing:.01em}
+  .topbar .reset{
+    font-family:"Geist Mono",monospace;font-size:11.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--muted);background:none;border:none;
+    cursor:pointer;padding:8px 6px;transition:color .2s var(--ease)}
+  .topbar .reset:hover{color:var(--text)}
+
+  /* ---------- Layout ---------- */
+  .stagewrap{display:flex;min-height:calc(100dvh - 62px)}
+  .stage{
+    flex:1 1 auto;position:relative;display:flex;align-items:center;justify-content:center;
+    padding:34px;min-width:0;overflow:hidden;
+  }
+  /* the signature: darkroom safelight glow */
+  .safelight{
+    position:absolute;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(120% 90% at 50% 8%, color-mix(in oklch, var(--amber) 13%, transparent), transparent 55%),
+      radial-gradient(90% 70% at 50% 110%, color-mix(in oklch, var(--amber-2) 8%, transparent), transparent 60%);
+  }
+  .rail{
+    flex:0 0 372px;border-left:1px solid var(--line);
+    background:var(--bg-2);padding:22px 20px 40px;overflow-y:auto;
+    max-height:calc(100dvh - 62px);
+  }
+
+  /* ---------- Empty / drop ---------- */
+  .empty{
+    position:relative;z-index:1;width:min(560px,100%);
+    border:1.5px dashed var(--line-2);border-radius:20px;
+    padding:52px 34px;text-align:center;cursor:pointer;
+    transition:border-color .25s var(--ease),background .25s var(--ease),transform .25s var(--ease);
+    background:color-mix(in oklch, var(--bg-2) 40%, transparent);
+  }
+  .empty:hover,.empty.drag{border-color:var(--amber);background:color-mix(in oklch, var(--amber) 6%, transparent)}
+  .empty.drag{transform:scale(1.01)}
+  .reel{width:66px;height:66px;margin:0 auto 22px;position:relative}
+  .reel svg{width:100%;height:100%;display:block}
+  .empty h2{font-size:21px;font-weight:600;letter-spacing:-.01em;margin-bottom:8px}
+  .empty p{color:var(--muted);font-size:13.5px;max-width:340px;margin:0 auto 22px}
+  .btn{
+    font-family:"Geist",sans-serif;font-weight:600;font-size:14px;
+    border:none;border-radius:11px;cursor:pointer;padding:12px 20px;
+    transition:transform .18s var(--ease),background .2s var(--ease),opacity .2s;
+    min-height:44px;
+  }
+  .btn:active{transform:translateY(1px)}
+  .btn-amber{background:var(--amber);color:oklch(0.20 0.03 66)}
+  .btn-amber:hover{background:color-mix(in oklch, var(--amber) 90%, white)}
+  .btn-ghost{background:var(--bg-3);color:var(--text);border:1px solid var(--line)}
+  .btn-ghost:hover{border-color:var(--line-2);background:color-mix(in oklch,var(--bg-3) 80%, white)}
+
+  /* ---------- Viewer ---------- */
+  .viewer{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;max-width:100%;max-height:100%}
+  #preview{
+    max-width:100%;max-height:calc(100dvh - 130px);height:auto;display:block;
+    border-radius:6px;
+    box-shadow:0 24px 60px -20px rgba(0,0,0,.7), 0 0 0 1px var(--line);
+    background:var(--bg-3);
+  }
+  .proc{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:color-mix(in oklch, var(--bg) 62%, transparent);border-radius:6px;
+    font-family:"Geist Mono",monospace;font-size:12.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--amber)
+  }
+  .proc .pulse{width:8px;height:8px;border-radius:50%;background:var(--amber);margin-right:12px;
+    animation:pulse 1s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}
+
+  /* ---------- Groups / labels ---------- */
+  .group{padding:20px 0;border-bottom:1px solid var(--line)}
+  .group:first-child{padding-top:2px}
+  .group:last-of-type{border-bottom:none}
+  .glabel{
+    font-family:"Geist Mono",monospace;font-size:11px;letter-spacing:.24em;text-transform:uppercase;
+    color:var(--faint);margin-bottom:15px;display:flex;align-items:center;gap:10px}
+  .glabel::after{content:"";flex:1;height:1px;background:var(--line)}
+
+  /* ---------- Stocks ---------- */
+  .stocks{display:flex;flex-direction:column;gap:8px}
+  .stock{
+    display:flex;align-items:center;gap:13px;width:100%;text-align:left;
+    background:var(--bg);border:1px solid var(--line);border-radius:12px;
+    padding:12px 14px;cursor:pointer;color:var(--text);
+    transition:border-color .18s var(--ease),background .18s var(--ease),transform .18s var(--ease);
+    min-height:44px;
+  }
+  .stock:hover{border-color:var(--line-2);transform:translateY(-1px)}
+  .stock.on{border-color:var(--amber);background:color-mix(in oklch, var(--amber) 8%, var(--bg));
+    box-shadow:0 0 0 1px var(--amber), 0 6px 18px -10px color-mix(in oklch,var(--amber) 60%, transparent)}
+  .stock .swatch{width:11px;height:26px;border-radius:4px;flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+  .stock .meta{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+  .stock .brand{font-family:"Geist Mono",monospace;font-size:10px;letter-spacing:.18em;color:var(--faint);text-transform:uppercase}
+  .stock .name{font-family:"Geist Mono",monospace;font-weight:600;font-size:14px;letter-spacing:.02em}
+  .stock .iso{font-family:"Geist Mono",monospace;font-size:11px;color:var(--muted);
+    border:1px solid var(--line);border-radius:6px;padding:3px 7px;flex:none}
+  .stock.on .iso{border-color:color-mix(in oklch,var(--amber) 55%, var(--line));color:var(--amber)}
+
+  /* ---------- Sliders ---------- */
+  .slider{margin-bottom:18px}
+  .slider:last-child{margin-bottom:2px}
+  .slider .row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px}
+  .slider .row .lab{font-size:13.5px;font-weight:500}
+  .slider .row .val{font-family:"Geist Mono",monospace;font-size:12px;color:var(--amber);min-width:38px;text-align:right}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;width:100%;height:3px;border-radius:2px;
+    background:var(--line-2);outline:none;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+    background:var(--amber);border:3px solid var(--bg-2);cursor:pointer;
+    box-shadow:0 0 0 1px var(--line-2), 0 2px 6px rgba(0,0,0,.4);
+    transition:transform .15s var(--ease)}
+  input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.12)}
+  input[type=range]::-moz-range-thumb{
+    width:18px;height:18px;border-radius:50%;background:var(--amber);
+    border:3px solid var(--bg-2);cursor:pointer;box-shadow:0 0 0 1px var(--line-2)}
+  input[type=range]::-webkit-slider-runnable-track{height:3px;border-radius:2px}
+
+  /* ---------- Toggle + segmented ---------- */
+  .finrow{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px}
+  .finrow:last-child{margin-bottom:0}
+  .finrow .lab{font-size:13.5px;font-weight:500}
+  .finrow .lab small{display:block;color:var(--faint);font-size:11.5px;font-weight:400;margin-top:2px}
+  .switch{position:relative;width:46px;height:26px;flex:none;cursor:pointer}
+  .switch input{opacity:0;width:0;height:0;position:absolute}
+  .switch .track{position:absolute;inset:0;background:var(--bg-3);border:1px solid var(--line-2);
+    border-radius:20px;transition:background .2s var(--ease),border-color .2s var(--ease)}
+  .switch .knob{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;
+    background:var(--muted);transition:transform .22s var(--ease),background .2s var(--ease)}
+  .switch input:checked + .track{background:color-mix(in oklch,var(--amber) 26%, var(--bg));border-color:var(--amber)}
+  .switch input:checked + .track .knob{transform:translateX(20px);background:var(--amber)}
+  .seg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
+  .seg button{
+    flex:1;font-family:"Geist Mono",monospace;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;
+    background:none;border:none;color:var(--muted);cursor:pointer;padding:9px 4px;border-radius:7px;
+    transition:background .15s var(--ease),color .15s var(--ease);min-height:38px}
+  .seg button.on{background:var(--bg-3);color:var(--amber)}
+  .segwrap{margin-top:12px}
+  .segwrap .lab{font-size:13.5px;font-weight:500;margin-bottom:9px;display:block}
+
+  /* ---------- Actions ---------- */
+  .actions{display:flex;flex-direction:column;gap:10px;padding-top:24px}
+  .actions .btn{width:100%}
+
+  /* ---------- Toast ---------- */
+  .toast{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+    background:var(--bg-3);border:1px solid var(--line-2);border-radius:11px;
+    padding:12px 18px;font-size:13.5px;z-index:60;opacity:0;pointer-events:none;
+    transition:opacity .28s var(--ease),transform .28s var(--ease);max-width:88vw;text-align:center;
+    box-shadow:0 16px 40px -16px rgba(0,0,0,.7)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast .ok{color:var(--amber);margin-right:8px}
+
+  /* ---------- Responsive ---------- */
+  @media (max-width:900px){
+    .stagewrap{flex-direction:column;min-height:auto}
+    .stage{padding:22px 16px 8px;min-height:44dvh}
+    #preview{max-height:52dvh}
+    .rail{flex:none;width:100%;border-left:none;border-top:1px solid var(--line);max-height:none}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none!important;animation:none!important}
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">
+      <div class="wordmark"><span class="dot"></span>Le&nbsp;Labo</div>
+      <div class="tagline">Développe tes photos iPhone en argentique.</div>
+    </div>
+    <button class="reset" id="changeTop" hidden>Changer de photo</button>
+  </div>
+
+  <div class="stagewrap">
+    <div class="stage" id="stage">
+      <div class="safelight"></div>
+
+      <div class="empty" id="empty">
+        <div class="reel">
+          <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--amber)">
+            <circle cx="32" cy="32" r="19"/>
+            <circle cx="32" cy="32" r="6"/>
+            <circle cx="32" cy="16.5" r="1.6" fill="currentColor" stroke="none"/>
+            <circle cx="45.5" cy="24.3" r="1.6" fill="currentColor" stroke="none"/>
+            <circle cx="45.5" cy="39.7" r="1.6" fill="currentColor" stroke="none"/>
+            <circle cx="32" cy="47.5" r="1.6" fill="currentColor" stroke="none"/>
+            <circle cx="18.5" cy="39.7" r="1.6" fill="currentColor" stroke="none"/>
+            <circle cx="18.5" cy="24.3" r="1.6" fill="currentColor" stroke="none"/>
+          </svg>
+        </div>
+        <h2>Charge ta pellicule</h2>
+        <p>Glisse une photo ici, ou touche pour la choisir. JPEG, PNG ou HEIC.</p>
+        <button class="btn btn-amber" id="pick">Choisir une photo</button>
+      </div>
+
+      <div class="viewer" id="viewer" hidden>
+        <canvas id="preview"></canvas>
+        <div class="proc" id="proc" hidden><span class="pulse"></span>Développement…</div>
+      </div>
+    </div>
+
+    <aside class="rail" id="rail" hidden>
+      <div class="group">
+        <div class="glabel">Pellicule</div>
+        <div class="stocks" id="stocks"></div>
+      </div>
+
+      <div class="group">
+        <div class="glabel">Réglages</div>
+        <div class="slider" data-k="intensity">
+          <div class="row"><span class="lab">Intensité</span><span class="val"></span></div>
+          <input type="range" min="0" max="100" value="85">
+        </div>
+        <div class="slider" data-k="grain">
+          <div class="row"><span class="lab">Grain</span><span class="val"></span></div>
+          <input type="range" min="0" max="100" value="40">
+        </div>
+        <div class="slider" data-k="halation">
+          <div class="row"><span class="lab">Halo</span><span class="val"></span></div>
+          <input type="range" min="0" max="100" value="55">
+        </div>
+        <div class="slider" data-k="vignette">
+          <div class="row"><span class="lab">Vignettage</span><span class="val"></span></div>
+          <input type="range" min="0" max="100" value="38">
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="glabel">Finitions</div>
+        <div class="finrow">
+          <div class="lab">Tampon date<small>Date du jour, en orange</small></div>
+          <label class="switch"><input type="checkbox" id="dateToggle"><span class="track"><span class="knob"></span></span></label>
+        </div>
+        <div class="segwrap">
+          <span class="lab">Bordure</span>
+          <div class="seg" id="borderSeg">
+            <button data-b="none" class="on">Aucune</button>
+            <button data-b="white">Blanche</button>
+            <button data-b="film">Film</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-amber" id="download">Télécharger</button>
+        <button class="btn btn-ghost" id="change">Changer de photo</button>
+      </div>
+    </aside>
+  </div>
+
+  <input type="file" id="file" accept="image/*,.heic,.heif,.HEIC,.HEIF" hidden>
+  <div class="toast" id="toast"></div>
+
+  <!-- Optional HEIC decoder (used only if the browser can't read HEIC natively). Loads on Vercel; harmless if blocked. -->
+  <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js" onerror="window.__noHeic=true"></script>
+
+<script>
+"use strict";
+
+/* ============================================================
+   FILM STOCKS
+   Each stock drives a colour grade + grain / halation character.
+   Tune these freely — they're just numbers.
+   ============================================================ */
+const STOCKS = {
+  portra400: {
+    brand:"Kodak", name:"Portra 400", iso:"400", swatch:"#F4B400",
+    grade:{ contrast:1.06, gamma:[1.00,1.00,1.02], gain:[1.045,1.005,0.955],
+            lift:[0.040,0.036,0.048], sat:1.05,
+            shadowTint:[0.04,0.00,0.015], highTint:[0.035,0.018,-0.02] },
+    grainMul:1.0, halationMul:0.35, bw:false
+  },
+  gold200: {
+    brand:"Kodak", name:"Gold 200", iso:"200", swatch:"#E39A16",
+    grade:{ contrast:1.08, gamma:[1.00,1.00,1.05], gain:[1.075,1.01,0.90],
+            lift:[0.048,0.052,0.040], sat:1.09,
+            shadowTint:[0.02,0.035,-0.03], highTint:[0.06,0.03,-0.05] },
+    grainMul:0.7, halationMul:0.4, bw:false
+  },
+  superia: {
+    brand:"Fujifilm", name:"Superia 400", iso:"400", swatch:"#33A24D",
+    grade:{ contrast:1.12, gamma:[1.00,0.99,1.00], gain:[0.975,1.025,1.035],
+            lift:[0.030,0.040,0.052], sat:1.13,
+            shadowTint:[-0.025,0.02,0.045], highTint:[-0.02,0.012,0.03] },
+    grainMul:1.0, halationMul:0.28, bw:false
+  },
+  cinestill: {
+    brand:"Cinestill", name:"800T", iso:"800", swatch:"#C63C2E",
+    grade:{ contrast:1.10, gamma:[1.00,1.00,1.00], gain:[1.00,1.00,1.02],
+            lift:[0.040,0.050,0.062], sat:1.04,
+            shadowTint:[-0.035,0.008,0.055], highTint:[0.02,0.0,0.0] },
+    grainMul:1.35, halationMul:1.15, bw:false
+  },
+  hp5: {
+    brand:"Ilford", name:"HP5 Plus", iso:"400", swatch:"#B8B4AC",
+    grade:{ contrast:1.15, gamma:[1.00,1.00,1.00], gain:[1.0,1.0,1.0],
+            lift:[0.052,0.052,0.052], sat:0,
+            shadowTint:[-0.012,0.0,0.02], highTint:[0.022,0.012,-0.012],
+            bwWeights:[0.24,0.68,0.08] },
+    grainMul:1.55, halationMul:0.0, bw:true
+  }
+};
+const HAL_COLOR = [1.0, 0.34, 0.14]; // red/orange halation tint
+const PREVIEW_MAX = 1180;
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const state = {
+  source:null, sw:0, sh:0,
+  stock:"portra400",
+  intensity:0.85, grain:0.40, halation:0.55, vignette:0.38,
+  dateStamp:false, border:"none"
+};
+
+/* ============================================================
+   NOISE (precomputed once, for consistent film grain)
+   ============================================================ */
+const NOISE_N = 256;
+const noiseBuf = new Float32Array(NOISE_N*NOISE_N);
+for(let i=0;i<noiseBuf.length;i++){
+  // triangular distribution in [-1,1] — softer than uniform
+  noiseBuf[i] = Math.random()+Math.random()-1;
+}
+
+/* ============================================================
+   DOM
+   ============================================================ */
+const $ = s=>document.querySelector(s);
+const stageEl=$("#stage"), emptyEl=$("#empty"), viewerEl=$("#viewer"),
+      railEl=$("#rail"), canvas=$("#preview"), procEl=$("#proc"),
+      fileInput=$("#file"), toastEl=$("#toast"),
+      changeTop=$("#changeTop");
+const ctx = canvas.getContext("2d",{willReadFrequently:true});
+
+// offscreen working canvas (photo only, before border)
+const work = document.createElement("canvas");
+const wctx = work.getContext("2d",{willReadFrequently:true});
+
+/* ---------- Build stock chips ---------- */
+const stocksEl=$("#stocks");
+Object.entries(STOCKS).forEach(([key,s])=>{
+  const b=document.createElement("button");
+  b.className="stock"+(key===state.stock?" on":"");
+  b.dataset.k=key;
+  b.innerHTML=`<span class="swatch" style="background:${s.swatch}"></span>
+    <span class="meta"><span class="brand">${s.brand}</span><span class="name">${s.name}</span></span>
+    <span class="iso">ISO ${s.iso}</span>`;
+  b.addEventListener("click",()=>{
+    state.stock=key;
+    stocksEl.querySelectorAll(".stock").forEach(x=>x.classList.toggle("on",x.dataset.k===key));
+    scheduleRender();
+  });
+  stocksEl.appendChild(b);
+});
+
+/* ---------- Sliders ---------- */
+document.querySelectorAll(".slider").forEach(sl=>{
+  const k=sl.dataset.k, input=sl.querySelector("input"), val=sl.querySelector(".val");
+  const paint=()=>{ val.textContent = Math.round(input.value)+"%"; };
+  paint();
+  input.addEventListener("input",()=>{
+    state[k]=input.value/100; paint(); scheduleRender();
+  });
+});
+
+/* ---------- Date toggle ---------- */
+$("#dateToggle").addEventListener("change",e=>{ state.dateStamp=e.target.checked; scheduleRender(); });
+
+/* ---------- Border segmented ---------- */
+$("#borderSeg").querySelectorAll("button").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    state.border=btn.dataset.b;
+    $("#borderSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===btn));
+    scheduleRender();
+  });
+});
+
+/* ---------- File picking ---------- */
+$("#pick").addEventListener("click",()=>fileInput.click());
+$("#change").addEventListener("click",()=>fileInput.click());
+changeTop.addEventListener("click",()=>fileInput.click());
+emptyEl.addEventListener("click",e=>{ if(e.target.id!=="pick") fileInput.click(); });
+fileInput.addEventListener("change",e=>{ if(e.target.files[0]) loadFile(e.target.files[0]); e.target.value=""; });
+
+/* ---------- Drag & drop anywhere ---------- */
+["dragenter","dragover"].forEach(ev=>document.addEventListener(ev,e=>{
+  e.preventDefault(); emptyEl.classList.add("drag");
+}));
+["dragleave","drop"].forEach(ev=>document.addEventListener(ev,e=>{
+  e.preventDefault(); if(ev==="drop"||e.target===document.documentElement) emptyEl.classList.remove("drag");
+}));
+document.addEventListener("drop",e=>{
+  const f=e.dataTransfer?.files?.[0]; if(f) loadFile(f);
+});
+
+/* ---------- Download ---------- */
+$("#download").addEventListener("click",exportImage);
+
+/* ============================================================
+   IMAGE LOADING  (JPEG / PNG / HEIC, with orientation)
+   ============================================================ */
+async function loadFile(file){
+  showProc(true,"Chargement…");
+  try{
+    const src = await decodeToBitmap(file);
+    state.source=src;
+    state.sw = src.width || src.naturalWidth;
+    state.sh = src.height || src.naturalHeight;
+    // size the preview working canvas
+    const scale = Math.min(1, PREVIEW_MAX/Math.max(state.sw,state.sh));
+    work.width = Math.max(1,Math.round(state.sw*scale));
+    work.height= Math.max(1,Math.round(state.sh*scale));
+    emptyEl.hidden=true; viewerEl.hidden=false; railEl.hidden=false; changeTop.hidden=false;
+    scheduleRender();
+  }catch(err){
+    console.error(err);
+    showProc(false);
+    toast(err.message || "Cette image n'a pas pu être lue.", true);
+  }
+}
+
+async function decodeToBitmap(file){
+  const type=(file.type||"").toLowerCase();
+  const nameHeic=/\.hei[cf]$/i.test(file.name||"");
+  const looksHeic = type.includes("heic")||type.includes("heif")||nameHeic;
+
+  // 1) native decode (best path; applies EXIF orientation)
+  if(!looksHeic){
+    try{ return await createImageBitmap(file,{imageOrientation:"from-image"}); }catch(_){}
+  } else {
+    // Safari can often decode HEIC natively — try it first
+    try{ return await createImageBitmap(file,{imageOrientation:"from-image"}); }catch(_){}
+    // 2) fall back to heic2any converter if available
+    if(window.heic2any && !window.__noHeic){
+      try{
+        const out = await window.heic2any({blob:file,toType:"image/jpeg",quality:0.94});
+        const blob = Array.isArray(out)?out[0]:out;
+        return await createImageBitmap(blob,{imageOrientation:"from-image"});
+      }catch(_){}
+    }
+  }
+  // 3) last resort: <img> element
+  try{
+    const url=URL.createObjectURL(file);
+    const img=await new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=()=>rej();im.src=url;});
+    return img;
+  }catch(_){}
+
+  if(looksHeic){
+    throw new Error("Ce HEIC n'a pas pu être lu ici. Ouvre Le Labo dans Safari, ou règle ton iPhone en JPEG (Réglages › Photos › Transférer vers Mac ou PC › Automatique).");
+  }
+  throw new Error("Format non reconnu. Utilise un JPEG, un PNG ou un HEIC.");
+}
+
+/* ============================================================
+   RENDER SCHEDULING  (coalesce slider events into one frame)
+   ============================================================ */
+let pending=false;
+function scheduleRender(){
+  if(pending||!state.source) return;
+  pending=true;
+  requestAnimationFrame(()=>{ pending=false; renderTo(work,wctx,work.width,work.height); composite(canvas,ctx,work,work.width,work.height); });
+}
+
+/* ============================================================
+   CORE PIPELINE
+   renderTo() draws + grades the photo into a canvas at W×H.
+   ============================================================ */
+function renderTo(cv,c,W,H){
+  cv.width=W; cv.height=H;
+  c.drawImage(state.source,0,0,W,H);
+
+  const orig = c.getImageData(0,0,W,H);
+  const proc = new ImageData(new Uint8ClampedArray(orig.data),W,H);
+
+  const stock = STOCKS[state.stock];
+  applyGrade(proc.data, stock);
+  if(state.halation>0 && stock.halationMul>0) applyHalation(proc.data,W,H,stock);
+  applyGrainVignette(proc.data,W,H,stock);
+
+  // blend graded result over the untouched original by "Intensité"
+  const k=state.intensity, o=orig.data, p=proc.data, out=c.createImageData(W,H), d=out.data;
+  for(let i=0;i<d.length;i+=4){
+    d[i]   = o[i]  *(1-k)+p[i]  *k;
+    d[i+1] = o[i+1]*(1-k)+p[i+1]*k;
+    d[i+2] = o[i+2]*(1-k)+p[i+2]*k;
+    d[i+3] = 255;
+  }
+  c.putImageData(out,0,0);
+}
+
+/* ---------- Grade: per-channel LUT + saturation + split-tone ---------- */
+function applyGrade(d,stock){
+  const g=stock.grade;
+  const lut=[buildLUT(g,0),buildLUT(g,1),buildLUT(g,2)];
+  const bw=stock.bw, w=g.bwWeights||[0.2126,0.7152,0.0722];
+  const sat=g.sat, sh=g.shadowTint, hi=g.highTint;
+  for(let i=0;i<d.length;i+=4){
+    let r=lut[0][d[i]], gr=lut[1][d[i+1]], b=lut[2][d[i+2]];
+    let lum;
+    if(bw){
+      lum = w[0]*r+w[1]*gr+w[2]*b; r=gr=b=lum;
+    } else {
+      lum = 0.2126*r+0.7152*gr+0.0722*b;
+      r  = lum+(r -lum)*sat;
+      gr = lum+(gr-lum)*sat;
+      b  = lum+(b -lum)*sat;
+    }
+    const L=lum/255, sw=1-L, hw=L;
+    r  += 255*(sh[0]*sw+hi[0]*hw);
+    gr += 255*(sh[1]*sw+hi[1]*hw);
+    b  += 255*(sh[2]*sw+hi[2]*hw);
+    d[i]=r; d[i+1]=gr; d[i+2]=b;
+  }
+}
+function buildLUT(g,ch){
+  const lut=new Float32Array(256);
+  const gm=g.gamma[ch], ga=g.gain[ch], lf=g.lift[ch], co=g.contrast;
+  for(let i=0;i<256;i++){
+    let v=i/255;
+    v=(v-0.5)*co+0.5;                 // contrast around mid grey
+    v=Math.pow(Math.max(0,Math.min(1,v)),1/gm);
+    v=v*ga+lf;                        // white balance + lifted black point
+    // soft highlight rolloff so lifted whites don't clip hard
+    if(v>0.85){ v=0.85+(v-0.85)/(1+(v-0.85)*1.6); }
+    lut[i]=Math.max(0,Math.min(1,v))*255;
+  }
+  return lut;
+}
+
+/* ---------- Halation + bloom (blurred bright mask, screened back) ---------- */
+function applyHalation(d,W,H,stock){
+  const N=W*H;
+  const mask=new Float32Array(N);
+  for(let i=0,p=0;i<d.length;i+=4,p++){
+    const lum=(0.2126*d[i]+0.7152*d[i+1]+0.0722*d[i+2])/255;
+    mask[p]= lum>0.72 ? (lum-0.72)/0.28 : 0;   // smooth bright pass
+  }
+  const r=Math.max(1,Math.round(Math.min(W,H)*0.013));
+  const blurred=new Float32Array(N), tmp=new Float32Array(N);
+  boxBlur(mask,tmp,W,H,r); boxBlur(tmp,blurred,W,H,r); boxBlur(blurred,tmp,W,H,r);
+  const halAmt=state.halation*stock.halationMul, bloomAmt=state.halation*0.32;
+  for(let i=0,p=0;i<d.length;i+=4,p++){
+    const ggl=tmp[p]; if(ggl<=0.002) continue;
+    // white bloom
+    const bw=Math.min(1,ggl*bloomAmt);
+    d[i]  =255-(255-d[i])  *(1-bw*0.55);
+    d[i+1]=255-(255-d[i+1])*(1-bw*0.55);
+    d[i+2]=255-(255-d[i+2])*(1-bw*0.55);
+    // red halation (screen with tinted glow)
+    const hg=Math.min(1,ggl*halAmt);
+    d[i]  =255-(255-d[i])  *(1-hg*HAL_COLOR[0]);
+    d[i+1]=255-(255-d[i+1])*(1-hg*HAL_COLOR[1]);
+    d[i+2]=255-(255-d[i+2])*(1-hg*HAL_COLOR[2]);
+  }
+}
+// O(n) separable box blur on a single channel
+function boxBlur(src,dst,W,H,r){
+  const iw=1/(2*r+1);
+  // horizontal
+  for(let y=0;y<H;y++){
+    let o=y*W, sum=0;
+    for(let x=-r;x<=r;x++) sum+=src[o+Math.max(0,Math.min(W-1,x))];
+    for(let x=0;x<W;x++){
+      dst[o+x]=sum*iw;
+      const add=src[o+Math.min(W-1,x+r+1)], sub=src[o+Math.max(0,x-r)];
+      sum+=add-sub;
+    }
+  }
+  // vertical (in place using src as scratch)
+  for(let x=0;x<W;x++){
+    let sum=0;
+    for(let y=-r;y<=r;y++) sum+=dst[Math.max(0,Math.min(H-1,y))*W+x];
+    for(let y=0;y<H;y++){
+      src[y*W+x]=sum*iw;
+      const add=dst[Math.min(H-1,y+r+1)*W+x], sub=dst[Math.max(0,y-r)*W+x];
+      sum+=add-sub;
+    }
+  }
+  dst.set(src);
+}
+
+/* ---------- Grain + vignette in one pass ---------- */
+function applyGrainVignette(d,W,H,stock){
+  const grainAmt=state.grain*stock.grainMul*46;
+  const cell=Math.max(1,Math.min(W,H)/720);   // keeps grain size consistent across resolutions
+  const cx=W/2, cy=H/2, hx=W/2, hy=H/2;
+  const vig=state.vignette*0.62;
+  const doGrain=grainAmt>0.5, doVig=vig>0.001;
+  for(let y=0;y<H;y++){
+    const ny=(y-cy)/hy, ry=y/cell|0;
+    for(let x=0;x<W;x++){
+      const i=(y*W+x)<<2;
+      if(doGrain){
+        const n=noiseBuf[((ry%NOISE_N+NOISE_N)%NOISE_N)*NOISE_N + ((x/cell|0)%NOISE_N)];
+        const L=(0.2126*d[i]+0.7152*d[i+1]+0.0722*d[i+2])/255;
+        const w=0.45+0.55*(4*L*(1-L));        // grain strongest in midtones
+        const g=n*grainAmt*w;
+        d[i]+=g; d[i+1]+=g; d[i+2]+=g;
+      }
+      if(doVig){
+        const nx=(x-cx)/hx;
+        const rr=Math.sqrt(nx*nx+ny*ny);
+        const s=smoothstep(0.62,1.4,rr);
+        const f=1-vig*s;
+        d[i]*=f; d[i+1]*=f; d[i+2]*=f;
+      }
+    }
+  }
+}
+function smoothstep(a,b,x){ const t=Math.max(0,Math.min(1,(x-a)/(b-a))); return t*t*(3-2*t); }
+
+/* ============================================================
+   COMPOSITE: photo canvas -> visible canvas, with border + date
+   Used for both preview and export so the look is identical.
+   ============================================================ */
+function composite(cv,c,photo,W,H){
+  const min=Math.min(W,H);
+  let bd=0, filmExtra=0;
+  if(state.border==="white") bd=Math.round(min*0.035);
+  if(state.border==="film"){ bd=Math.round(min*0.05); filmExtra=Math.round(min*0.055); }
+  const outW=W+bd*2, outH=H+bd*2+filmExtra;
+  cv.width=outW; cv.height=outH;
+
+  if(state.border==="white"){ c.fillStyle="#efece4"; c.fillRect(0,0,outW,outH); }
+  else if(state.border==="film"){ c.fillStyle="#0c0b0a"; c.fillRect(0,0,outW,outH); }
+
+  c.drawImage(photo,bd,bd,W,H);
+
+  if(state.border==="film") drawFilmRebate(c,bd,W,H,filmExtra,min);
+  if(state.dateStamp) drawDateStamp(c,bd,H,W,min);
+}
+
+function drawFilmRebate(c,bd,W,H,extra,min){
+  const s=Math.round(min*0.026);
+  const y=bd+H+Math.round(extra*0.62);
+  const st=STOCKS[state.stock];
+  c.font=`600 ${s}px "Geist Mono", monospace`;
+  c.textBaseline="middle";
+  c.fillStyle="#E8A23C";
+  c.textAlign="left";
+  c.fillText(`${st.brand.toUpperCase()}  ${st.name.toUpperCase()}  •  ${st.iso}`, bd+Math.round(min*0.02), y);
+  c.textAlign="right";
+  const fr=(10+Math.floor(Math.random()*26));
+  c.fillText(`${fr}A  ▸`, bd+W-Math.round(min*0.02), y);
+}
+
+function drawDateStamp(c,bd,H,W,min){
+  const now=new Date();
+  const yy=String(now.getFullYear()).slice(2);
+  const mm=String(now.getMonth()+1).padStart(2,"0");
+  const dd=String(now.getDate()).padStart(2,"0");
+  const text=`’${yy} ${mm} ${dd}`;
+  const s=Math.round(min*0.032);
+  c.font=`600 ${s}px "Geist Mono", monospace`;
+  c.textAlign="right"; c.textBaseline="alphabetic";
+  const px=bd+W-Math.round(min*0.035), py=bd+H-Math.round(min*0.04);
+  c.save();
+  c.shadowColor="rgba(240,150,40,0.9)"; c.shadowBlur=s*0.55;
+  c.fillStyle="#F7A83A"; c.fillText(text,px,py);
+  c.shadowBlur=s*0.28; c.fillText(text,px,py); // double pass for the LED bleed
+  c.restore();
+}
+
+/* ============================================================
+   EXPORT  (full resolution)
+   ============================================================ */
+function exportImage(){
+  if(!state.source) return;
+  showProc(true,"Développement…");
+  setTimeout(()=>{
+    try{
+      const W=state.sw, H=state.sh;
+      const full=document.createElement("canvas"), fctx=full.getContext("2d",{willReadFrequently:true});
+      renderTo(full,fctx,W,H);
+      const outCv=document.createElement("canvas"), octx=outCv.getContext("2d");
+      composite(outCv,octx,full,W,H);
+      outCv.toBlob(blob=>{
+        showProc(false);
+        const name=`argentique-${state.stock}-${Date.now()}.jpg`;
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement("a"); a.href=url; a.download=name;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(()=>URL.revokeObjectURL(url),4000);
+        const iOS=/iP(hone|ad|od)/.test(navigator.userAgent);
+        toast(iOS ? "Ouverte dans un nouvel onglet — appuie longuement pour l'enregistrer."
+                  : "Photo développée ✓");
+      },"image/jpeg",0.95);
+    }catch(err){ console.error(err); showProc(false); toast("Le développement a échoué. Réessaie.",true); }
+  },40);
+}
+
+/* ============================================================
+   UI helpers
+   ============================================================ */
+function showProc(on,label){
+  procEl.hidden=!on;
+  if(on&&label) procEl.childNodes[1] && (procEl.lastChild.textContent=label);
+}
+let toastT;
+function toast(msg,warn){
+  toastEl.innerHTML = warn ? msg : `<span class="ok">✓</span>${msg}`;
+  if(warn) toastEl.querySelector(".ok")?.remove();
+  toastEl.classList.add("show");
+  clearTimeout(toastT); toastT=setTimeout(()=>toastEl.classList.remove("show"), warn?5200:3200);
+}
+</script>
+</body>
+</html>
